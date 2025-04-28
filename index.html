@@ -39,90 +39,89 @@
     </div>
   </div>
 
-  <script>
-    new Vue({
-      el: '#app',
-      data: {
-        loading: false,
-        length: 100, // 初始长度
-        width: 100,  // 初始宽度
-        crownCADPlugin: null,
-        currentPickElement: null,
-      },
-
-      mounted() {
-        // 确保 CrownCADPlugin 加载成功
-        if (window.CrownCADPlugin) {
-          this.crownCADPlugin = new window.CrownCADPlugin();
-          this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
-          this.crownCADPlugin.setMaxAttempt(5);
-          this.crownCADPlugin.setLayout(300, 300, 300);
-
-          // 尝试连接 CrownCAD
-          this.crownCADPlugin.connect().then(() => {
-            console.log('连接 CrownCAD 成功');
-            this.loading = false; // 加载完成
-            this.subscribeElementPick();
-          }).catch(error => {
-            console.error('连接 CrownCAD 失败:', error);
-            this.loading = false;
-          });
-        } else {
-          console.error('CrownCADPlugin 未加载');
-        }
-      },
-
-      methods: {
-        subscribeElementPick() {
-          if (this.crownCADPlugin && window.PluginEventType) {
-            this.crownCADPlugin.request.subscribeEvent(window.PluginEventType.ELEMENTPICK, res => {
-              console.log('选中的元素信息:', res);
-              this.currentPickElement = res;
-            });
-          } else {
-            console.error('subscribeElementPick 时 CrownCADPlugin 或 PluginEventType 未加载');
-          }
+ <script>
+  // CrownCAD SDK 加载完成后再 new Vue
+  window.addEventListener('load', function() {
+    if (window.CrownCADPlugin) {
+      new Vue({
+        el: '#app',
+        data: {
+          loading: false,
+          length: 100,
+          width: 100,
+          crownCADPlugin: null,
+          currentPickElement: null,
         },
 
-        createModel() {
-          if (!this.crownCADPlugin || !window.Point) {
-            console.error('创建模型失败，crownCADPlugin 或 Point 未定义');
-            return;
-          }
+        mounted() {
+          this.initCrownCADPlugin();
+        },
 
-          console.log('当前选中的元素：', this.currentPickElement);
+        methods: {
+          initCrownCADPlugin() {
+            this.crownCADPlugin = new window.CrownCADPlugin();
+            this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
+            this.crownCADPlugin.setMaxAttempt(5);
+            this.crownCADPlugin.setLayout(300, 300, 300);
 
-          this.loading = true; // 开启加载状态
-
-          try {
-            // 清除上一个命令
-            this.crownCADPlugin.command.clearCommand();
-
-            // 创建草图并绘制矩形
-            this.crownCADPlugin.command.sketch.createSketch({ sketchName: 'sketch1', datumId: 8 });
-            this.crownCADPlugin.command.sketch.createRectangle({
-              startPoint: new window.Point(0, 0),
-              endPoint: new window.Point(this.length, this.width)
-            });
-            this.crownCADPlugin.command.sketch.exitSketch();
-
-            // 执行命令
-            this.crownCADPlugin.command.execute(true).then(() => {
-              this.crownCADPlugin.command.clearCommand();
-              console.log("草图创建成功");
+            this.crownCADPlugin.connect().then(() => {
+              console.log('连接 CrownCAD 成功');
               this.loading = false;
+              this.subscribeElementPick();
             }).catch(error => {
-              console.error('执行建模命令失败:', error);
+              console.error('连接 CrownCAD 失败:', error);
               this.loading = false;
             });
-          } catch (err) {
-            console.error('建模过程中出现异常:', err);
-            this.loading = false;
+          },
+
+          subscribeElementPick() {
+            if (this.crownCADPlugin && window.PluginEventType) {
+              this.crownCADPlugin.request.subscribeEvent(window.PluginEventType.ELEMENTPICK, res => {
+                console.log('选中的元素信息:', res);
+                this.currentPickElement = res;
+              });
+            } else {
+              console.error('订阅失败: 插件或事件类型未定义');
+            }
+          },
+
+          createModel() {
+            if (!this.crownCADPlugin || !window.Point) {
+              console.error('创建模型失败，插件或 Point 类未定义');
+              return;
+            }
+
+            console.log('当前选中的元素：', this.currentPickElement);
+            this.loading = true;
+
+            try {
+              this.crownCADPlugin.command.clearCommand();
+              this.crownCADPlugin.command.sketch.createSketch({ sketchName: 'sketch1', datumId: 8 });
+              this.crownCADPlugin.command.sketch.createRectangle({
+                startPoint: new window.Point(0, 0),
+                endPoint: new window.Point(this.length, this.width)
+              });
+              this.crownCADPlugin.command.sketch.exitSketch();
+              this.crownCADPlugin.command.execute(true).then(() => {
+                this.crownCADPlugin.command.clearCommand();
+                console.log('草图创建成功');
+                this.loading = false;
+              }).catch(error => {
+                console.error('执行命令失败:', error);
+                this.loading = false;
+              });
+            } catch (err) {
+              console.error('建模过程中异常:', err);
+              this.loading = false;
+            }
           }
         }
-      }
-    });
-  </script>
+      });
+    } else {
+      console.error('CrownCADPlugin 加载失败，请检查 crowncad-plugin-sdk.js 文件是否正确');
+    }
+  });
+</script>
 </body>
 </html>
 
