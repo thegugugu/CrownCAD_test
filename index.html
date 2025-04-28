@@ -52,17 +52,24 @@
       },
 
       mounted() {
-        // 初始化CrownCAD插件
-        this.crownCADPlugin = new CrownCADPlugin();
-        this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
-        this.crownCADPlugin.setMaxAttempt(5);
-        this.crownCADPlugin.setLayout(200, 200, 200);
+        // 确保 CrownCADPlugin 已加载，并通过 window.CrownCADPlugin 访问
+        if (window.CrownCADPlugin) {
+          // 初始化CrownCAD插件
+          this.crownCADPlugin = new window.CrownCADPlugin();
+          this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
+          this.crownCADPlugin.setMaxAttempt(5);
+          this.crownCADPlugin.setLayout(200, 200, 200);
 
-        // 尝试连接CrownCAD平台
-        this.crownCADPlugin.connect().then(() => {
-          this.loaded = true;
-          this.subscribeElementPick();
-        });
+          // 尝试连接CrownCAD平台
+          this.crownCADPlugin.connect().then(() => {
+            this.loaded = true;
+            this.subscribeElementPick();
+          }).catch(error => {
+            console.error('连接失败:', error);
+          });
+        } else {
+          console.error('CrownCADPlugin 未加载');
+        }
       },
 
       methods: {
@@ -89,14 +96,6 @@
 
           // 执行命令
           this.crownCADPlugin.command.execute(true).then(() => {
-            this.crownCADPlugin.command.clearCommand();
-            console.log("草图创建成功");
-          });
-        }
-      }
-    });
-  </script>
+            this.crownCADPlugin.command.clear
 
-</body>
-</html>
 
