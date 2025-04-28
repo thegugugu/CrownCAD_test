@@ -1,5 +1,23 @@
-<template>
-  <div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrownCAD Plugin</title>
+
+  <!-- 引入 Vue.js -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+
+  <!-- 引入 CrownCAD 插件 SDK -->
+  <script src="https://thegugugu.github.io/CrownCAD_test/crowncad-plugin-sdk-0.0.1.js"></script>
+  
+  <!-- 引入 Element UI (如果需要) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js"></script>
+
+</head>
+<body>
+  <div id="app">
     <span style="font-size: 30px">创建矩形</span>
 
     <!-- 用户输入长和宽 -->
@@ -20,69 +38,65 @@
       <el-button type="primary" :disabled="loading" @click="createModel">创建</el-button>
     </div>
   </div>
-</template>
 
-<script>
-import { CrownCADPlugin, PluginEventType, Point } from "../../../nodeApp/static/lib/crowncad-plugin-sdk-0.0.1";
+  <script>
+    // Vue 实例的代码
+    new Vue({
+      el: '#app',
+      data: {
+        loading: false,
+        length: 100, // 初始长方体长度
+        width: 100,  // 初始长方体宽度
+        crownCADPlugin: null,
+        currentPickElement: null,
+      },
 
-export default {
-  name: "PluginSketch",
-  data() {
-    return {
-      loading: false,
-      length: 100, // 初始长方体长度
-      width: 100,  // 初始长方体宽度
-      crownCADPlugin: null,
-      currentPickElement: null,
-    };
-  },
+      mounted() {
+        // 初始化CrownCAD插件
+        this.crownCADPlugin = new CrownCADPlugin();
+        this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
+        this.crownCADPlugin.setMaxAttempt(5);
+        this.crownCADPlugin.setLayout(200, 200, 200);
 
-  mounted() {
-    // 初始化CrownCAD插件
-    this.crownCADPlugin = new CrownCADPlugin();
-    this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
-    this.crownCADPlugin.setMaxAttempt(5);
-    this.crownCADPlugin.setLayout(200, 200, 200);
+        // 尝试连接CrownCAD平台
+        this.crownCADPlugin.connect().then(() => {
+          this.loaded = true;
+          this.subscribeElementPick();
+        });
+      },
 
-    // 尝试连接CrownCAD平台
-    this.crownCADPlugin.connect().then(() => {
-      this.loaded = true;
-      this.subscribeElementPick();
+      methods: {
+        subscribeElementPick() {
+          // 订阅元素选择事件
+          this.crownCADPlugin.request.subscribeEvent(PluginEventType.ELEMENTPICK, res => {
+            console.log(res);
+          });
+        },
+
+        createModel() {
+          console.log(this.currentPickElement);
+
+          // 清除上一个命令
+          this.crownCADPlugin.command.clearCommand();
+
+          // 创建草图并生成矩形
+          this.crownCADPlugin.command.sketch.createSketch({ sketchName: 'sketch1', datumId: 8 });
+          this.crownCADPlugin.command.sketch.createRectangle({
+            startPoint: new Point(0, 0),
+            endPoint: new Point(this.length, this.width)
+          });
+          this.crownCADPlugin.command.sketch.exitSketch();
+
+          // 执行命令
+          this.crownCADPlugin.command.execute(true).then(() => {
+            this.crownCADPlugin.command.clearCommand();
+            console.log("草图创建成功");
+          });
+        }
+      }
     });
-  },
+  </script>
 
-  methods: {
-    subscribeElementPick() {
-      // 订阅元素选择事件
-      this.crownCADPlugin.request.subscribeEvent(PluginEventType.ELEMENTPICK, res => {
-        console.log(res);
-      });
-    },
+</body>
+</html>
 
-    createModel() {
-      console.log(this.currentPickElement);
-
-      // 清除上一个命令
-      this.crownCADPlugin.command.clearCommand();
-
-      // 创建草图并生成矩形
-      this.crownCADPlugin.command.sketch.createSketch({ sketchName: 'sketch1', datumId: 8 });
-      this.crownCADPlugin.command.sketch.createRectangle({
-        startPoint: new Point(0, 0),
-        endPoint: new Point(this.length, this.width)
-      });
-      this.crownCADPlugin.command.sketch.exitSketch();
-
-      // 执行命令
-      this.crownCADPlugin.command.execute(true).then(() => {
-        this.crownCADPlugin.command.clearCommand();
-        console.log("草图创建成功");
-      });
-    }
-  }
-};
-</script>
-
-<style scoped>
-/* 可自定义样式 */
-</style>
