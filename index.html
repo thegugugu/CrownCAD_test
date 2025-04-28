@@ -32,51 +32,78 @@
   </div>
 
   <script>
-    new Vue({
-      el: '#app',
-      name: "PluginSketch",
-      data() {
-        return {
-          loading: false,
-          length: 100,
-          width: 100,
-          crownCADPlugin: null,
-          currentPickElement: null,
-        }
-      },
-      mounted() {
-        // 使用全局变量，不需要import
-        this.crownCADPlugin = new CrownCADPlugin();
-        this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
-        this.crownCADPlugin.setMaxAttempt(5);
-        this.crownCADPlugin.setLayout(200, 200, 200);
-        this.crownCADPlugin.connect().then(() => {
-          this.loaded = true;
-          this.subscribeElementPick();
-        });
-      },
-      methods: {
-        subscribeElementPick() {
-          this.crownCADPlugin.request.subscribeEvent(PluginEventType.ELEMENTPICK, res => {
-            console.log(res);
+    // 检查SDK是否加载完成
+    function checkSDKLoaded() {
+      if (typeof CrownCADPlugin !== 'undefined') {
+        console.log("SDK已加载");
+        initVueApp();
+      } else {
+        console.log("SDK尚未加载，等待...");
+        setTimeout(checkSDKLoaded, 100);
+      }
+    }
+
+    function initVueApp() {
+      new Vue({
+        el: '#app',
+        name: "PluginSketch",
+        data() {
+          return {
+            loading: false,
+            length: 100,
+            width: 100,
+            crownCADPlugin: null,
+            currentPickElement: null,
+          }
+        },
+        mounted() {
+          // 使用全局变量，不需要import
+          this.crownCADPlugin = new CrownCADPlugin();
+          this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
+          this.crownCADPlugin.setMaxAttempt(5);
+          this.crownCADPlugin.setLayout(200, 200, 200);
+          this.crownCADPlugin.connect().then(() => {
+            this.loaded = true;
+            this.subscribeElementPick();
           });
         },
-        createModel() {
-          console.log(this.currentPickElement);
-          this.crownCADPlugin.command.clearCommand();
-          this.crownCADPlugin.command.sketch.createSketch({sketchName: 'sketch1', datumId: 8});
-          this.crownCADPlugin.command.sketch.createRectangle({
-            startPoint: new Point(0, 0),
-            endPoint: new Point(this.length, this.width)
-          });
-          this.crownCADPlugin.command.sketch.exitSketch();
-          this.crownCADPlugin.command.execute(true).then(() => {
+        methods: {
+          subscribeElementPick() {
+            // 确保PluginEventType也已定义
+            if (typeof PluginEventType !== 'undefined') {
+              this.crownCADPlugin.request.subscribeEvent(PluginEventType.ELEMENTPICK, res => {
+                console.log(res);
+              });
+            } else {
+              console.error("PluginEventType is not defined");
+            }
+          },
+          createModel() {
+            console.log(this.currentPickElement);
             this.crownCADPlugin.command.clearCommand();
-            console.log("草图创建成功");
-          });
+            
+            // 确保Point已定义
+            if (typeof Point !== 'undefined') {
+              this.crownCADPlugin.command.sketch.createSketch({sketchName: 'sketch1', datumId: 8});
+              this.crownCADPlugin.command.sketch.createRectangle({
+                startPoint: new Point(0, 0),
+                endPoint: new Point(this.length, this.width)
+              });
+              this.crownCADPlugin.command.sketch.exitSketch();
+              this.crownCADPlugin.command.execute(true).then(() => {
+                this.crownCADPlugin.command.clearCommand();
+                console.log("草图创建成功");
+              });
+            } else {
+              console.error("Point is not defined");
+            }
+          }
         }
-      }
-    });
+      });
+    }
+
+    // 页面加载后检查SDK是否已加载
+    window.onload = checkSDKLoaded;
   </script>
 </body>
 </html>
