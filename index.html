@@ -1,0 +1,67 @@
+<template>
+  <div>
+  <span style="font-size: 30px">创建矩形</span>
+  <div v-loading="loading" element-loading-text="模型生成中">
+  <el-form :inline="false" label-width="20px">
+  <el-form-item label="长">
+  <el-input size="small" style="width: 150px" v-model="length"></el-input>
+  </el-form-item>
+  <el-form-item label="宽">
+  <el-input size="small" style="width: 150px" v-model="width"></el-input>
+  </el-form-item>
+  </el-form>
+  </div>
+  <div>
+  <el-button type="primary" :disabled="loading" @click="createModel">创建</el-button>
+  </div>
+  </div>
+  </template>
+  <script>
+  Import
+  {CrownCADPlugin,PluginEventType,Point}
+  "../../../nodeApp/static/lib/crowncad-plugin-sdk-0.0.1";
+  export default {
+  name: "PluginSketch",
+  data() {
+  return {
+  loading: false,
+ length: 100,
+ width: 100,
+ crownCADPlugin: null,
+ currentPickElement: null,
+ }
+ },
+ mounted() {
+ this.crownCADPlugin = new CrownCADPlugin();
+ this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/")
+ this.crownCADPlugin.setMaxAttempt(5);
+ this.crownCADPlugin.setLayout(200, 200, 200);
+ this.crownCADPlugin.connect().then(() => {
+ this.loaded = true;
+ this.subscribeElementPick();
+ });
+ },
+ methods: {
+ subscribeElementPick () {
+ this.crownCADPlugin.request.subscribeEvent(PluginEventType.ELEMENTPICK, res => {
+ console.log(res)
+ })
+ },
+ createModel() {
+ console.log(this.currentPickElement)
+ this.crownCADPlugin.command.clearCommand();
+ this.crownCADPlugin.command.sketch.createSketch({sketchName: 'sketch1', datumId:
+ 8});
+ this.crownCADPlugin.command.sketch.createRectangle({startPoint: new Point(0, 0),
+ endPoint:newPoint(this.length, this.width)});
+ this.crownCADPlugin.command.sketch.exitSketch();
+ this.crownCADPlugin.command.execute(true).then(()=>{
+ this.crownCADPlugin.command.clearCommand();
+ console.log("草图创建成功");
+ })
+ }
+ },
+ }
+ </script>
+ <stylescoped>
+ </style> 
