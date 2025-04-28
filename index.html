@@ -11,11 +11,11 @@
   <!-- 引入 CrownCAD 插件 SDK -->
   <script src="https://thegugugu.github.io/CrownCAD_test/crowncad-plugin-sdk-0.0.3.js" defer></script>
   
-  <!-- 引入 Element UI (如果需要) -->
+  <!-- 引入 Element UI -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css">
   <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js"></script>
-
 </head>
+
 <body>
   <div id="app">
     <span style="font-size: 30px">创建矩形</span>
@@ -40,32 +40,32 @@
   </div>
 
   <script>
-    // Vue 实例的代码
     new Vue({
       el: '#app',
       data: {
         loading: false,
-        length: 100, // 初始长方体长度
-        width: 100,  // 初始长方体宽度
+        length: 100, // 初始长度
+        width: 100,  // 初始宽度
         crownCADPlugin: null,
         currentPickElement: null,
       },
 
       mounted() {
-        // 确保 CrownCADPlugin 已加载，并通过 window.CrownCADPlugin 访问
+        // 确保 CrownCADPlugin 加载成功
         if (window.CrownCADPlugin) {
-          // 初始化CrownCAD插件
           this.crownCADPlugin = new window.CrownCADPlugin();
           this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
           this.crownCADPlugin.setMaxAttempt(5);
-          this.crownCADPlugin.setLayout(200, 200, 200);
+          this.crownCADPlugin.setLayout(300, 300, 300);
 
-          // 尝试连接CrownCAD平台
+          // 尝试连接 CrownCAD
           this.crownCADPlugin.connect().then(() => {
-            this.loaded = true;
+            console.log('连接 CrownCAD 成功');
+            this.loading = false; // 加载完成
             this.subscribeElementPick();
           }).catch(error => {
-            console.error('连接失败:', error);
+            console.error('连接 CrownCAD 失败:', error);
+            this.loading = false;
           });
         } else {
           console.error('CrownCADPlugin 未加载');
@@ -74,28 +74,57 @@
 
       methods: {
         subscribeElementPick() {
-          // 订阅元素选择事件
-          this.crownCADPlugin.request.subscribeEvent(PluginEventType.ELEMENTPICK, res => {
-            console.log(res);
-          });
+          if (this.crownCADPlugin && window.PluginEventType) {
+            this.crownCADPlugin.request.subscribeEvent(window.PluginEventType.ELEMENTPICK, res => {
+              console.log('选中的元素信息:', res);
+              this.currentPickElement = res;
+            });
+          } else {
+            console.error('subscribeElementPick 时 CrownCADPlugin 或 PluginEventType 未加载');
+          }
         },
 
         createModel() {
-          console.log(this.currentPickElement);
+          if (!this.crownCADPlugin || !window.Point) {
+            console.error('创建模型失败，crownCADPlugin 或 Point 未定义');
+            return;
+          }
 
-          // 清除上一个命令
-          this.crownCADPlugin.command.clearCommand();
+          console.log('当前选中的元素：', this.currentPickElement);
 
-          // 创建草图并生成矩形
-          this.crownCADPlugin.command.sketch.createSketch({ sketchName: 'sketch1', datumId: 8 });
-          this.crownCADPlugin.command.sketch.createRectangle({
-            startPoint: new Point(0, 0),
-            endPoint: new Point(this.length, this.width)
-          });
-          this.crownCADPlugin.command.sketch.exitSketch();
+          this.loading = true; // 开启加载状态
 
-          // 执行命令
-          this.crownCADPlugin.command.execute(true).then(() => {
-            this.crownCADPlugin.command.clear
+          try {
+            // 清除上一个命令
+            this.crownCADPlugin.command.clearCommand();
+
+            // 创建草图并绘制矩形
+            this.crownCADPlugin.command.sketch.createSketch({ sketchName: 'sketch1', datumId: 8 });
+            this.crownCADPlugin.command.sketch.createRectangle({
+              startPoint: new window.Point(0, 0),
+              endPoint: new window.Point(this.length, this.width)
+            });
+            this.crownCADPlugin.command.sketch.exitSketch();
+
+            // 执行命令
+            this.crownCADPlugin.command.execute(true).then(() => {
+              this.crownCADPlugin.command.clearCommand();
+              console.log("草图创建成功");
+              this.loading = false;
+            }).catch(error => {
+              console.error('执行建模命令失败:', error);
+              this.loading = false;
+            });
+          } catch (err) {
+            console.error('建模过程中出现异常:', err);
+            this.loading = false;
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
 
 
