@@ -4926,6 +4926,9 @@
   exports.ScriptFontNameType = ScriptFontNameType;
   exports.ScriptVariableType = ScriptVariableType;
   exports.ScriptVariableUnit = ScriptVariableUnit;
+  window.CrownCADPlugin = CrownCADPlugin;
+  window.PluginEventType = PluginEventType;
+  window.Point = Point;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
