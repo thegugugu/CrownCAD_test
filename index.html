@@ -62,9 +62,14 @@
           this.crownCADPlugin.setParentOrigin("https://cad.crowncad.com/");
           this.crownCADPlugin.setMaxAttempt(5);
           this.crownCADPlugin.setLayout(200, 200, 200);
+          
+          // 使用catch捕获错误
           this.crownCADPlugin.connect().then(() => {
             this.loaded = true;
             this.subscribeElementPick();
+          }).catch(error => {
+            console.error('连接失败:', error); // 捕获连接错误
+            this.loading = false;
           });
         },
         methods: {
@@ -81,7 +86,7 @@
           createModel() {
             console.log(this.currentPickElement);
             this.crownCADPlugin.command.clearCommand();
-            
+
             // 确保Point已定义
             if (typeof Point !== 'undefined') {
               this.crownCADPlugin.command.sketch.createSketch({sketchName: 'sketch1', datumId: 8});
@@ -90,9 +95,14 @@
                 endPoint: new Point(this.length, this.width)
               });
               this.crownCADPlugin.command.sketch.exitSketch();
+
+              // 使用catch捕获执行错误
               this.crownCADPlugin.command.execute(true).then(() => {
                 this.crownCADPlugin.command.clearCommand();
                 console.log("草图创建成功");
+              }).catch(error => {
+                console.error('执行命令失败:', error);  // 捕获命令执行错误
+                this.loading = false;
               });
             } else {
               console.error("Point is not defined");
